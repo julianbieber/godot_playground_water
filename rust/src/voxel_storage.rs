@@ -1,4 +1,4 @@
-struct VoxelStorage {
+pub struct VoxelStorage {
     ground: Vec<u64>,
 }
 
@@ -24,7 +24,6 @@ impl VoxelStorage {
         let grid_positon = extract_grid_index(lin);
         let ground = self.ground[grid_positon as usize];
         let ground_pattern = (1 as u64) << height;
-        dbg!((ground, ground_pattern));
         (ground & ground_pattern) != 0
     }
 
@@ -56,33 +55,129 @@ impl VoxelStorage {
                 }
 
                 // left
-
                 if let Some(left) = VoxelStorage::left([x as u8, z as u8]) {
                     let left_column = self.ground[left[0] as usize + (left[1] as usize) * 64];
-                    for y in 0..64u8 {
-                        let current_column = left_column >> y;
-                        let current_left = left_column >> y;
-                        if current_column & 1 == 1 && current_left & 1 == 0 {
-                            faces.left.push([x as u8, y, z as u8]);
-                        }
-                    }
+                    VoxelStorage::faces_from_next_pillar(
+                        column,
+                        left_column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.left,
+                    )
+                } else {
+                    VoxelStorage::faces_from_next_pillar_edge(
+                        column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.left,
+                    )
+                }
+                // right
+                if let Some(right) = VoxelStorage::right([x as u8, z as u8]) {
+                    let right_column = self.ground[right[0] as usize + (right[1] as usize) * 64];
+                    VoxelStorage::faces_from_next_pillar(
+                        column,
+                        right_column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.right,
+                    )
+                } else {
+                    VoxelStorage::faces_from_next_pillar_edge(
+                        column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.right,
+                    )
+                }
+
+                // front
+                if let Some(front) = VoxelStorage::front([x as u8, z as u8]) {
+                    let front_column = self.ground[front[0] as usize + (front[1] as usize) * 64];
+                    VoxelStorage::faces_from_next_pillar(
+                        column,
+                        front_column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.front,
+                    )
+                } else {
+                    VoxelStorage::faces_from_next_pillar_edge(
+                        column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.front,
+                    )
+                }
+                // back
+                if let Some(back) = VoxelStorage::right([x as u8, z as u8]) {
+                    let back_column = self.ground[back[0] as usize + (back[1] as usize) * 64];
+                    VoxelStorage::faces_from_next_pillar(
+                        column,
+                        back_column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.back,
+                    )
+                } else {
+                    VoxelStorage::faces_from_next_pillar_edge(
+                        column,
+                        x as u8,
+                        z as u8,
+                        &mut faces.back,
+                    )
                 }
             }
         }
-        todo!()
+        faces
+    }
+
+    fn faces_from_next_pillar(column: u64, next: u64, x: u8, z: u8, dst: &mut Vec<[u8; 3]>) {
+        for y in 0..64u8 {
+            let current_column = column >> y;
+            let current_next = next >> y;
+            if (current_column & 1) == 1 && (current_next & 1) == 0 {
+                dst.push([x, y, z]);
+            }
+        }
+    }
+
+    fn faces_from_next_pillar_edge(column: u64, x: u8, z: u8, dst: &mut Vec<[u8; 3]>) {
+        for y in 0..64u8 {
+            let current_column = column >> y;
+            if (current_column & 1) == 1 {
+                dst.push([x, y, z]);
+            }
+        }
     }
 
     fn left(p: [u8; 2]) -> Option<[u8; 2]> {
-        None
+        if p[0] == 0 {
+            None
+        } else {
+            Some([p[0] - 1, p[1]])
+        }
     }
     fn right(p: [u8; 2]) -> Option<[u8; 2]> {
-        None
+        if p[0] == 63 {
+            None
+        } else {
+            Some([p[0] + 1, p[1]])
+        }
     }
     fn front(p: [u8; 2]) -> Option<[u8; 2]> {
-        None
+        if p[1] == 0 {
+            None
+        } else {
+            Some([p[0], p[1] - 1])
+        }
     }
     fn back(p: [u8; 2]) -> Option<[u8; 2]> {
-        None
+        if p[1] == 63 {
+            None
+        } else {
+            Some([p[0], p[1] + 1])
+        }
     }
 }
 
@@ -142,9 +237,7 @@ mod test {
         for x in 0..64 {
             for y in 0..64 {
                 for z in 0..64 {
-                    dbg!([x, y, z]);
                     let lin = linearize_position([x, y, z]);
-                    dbg!(lin);
                     let delin = delinearize_position(lin);
                     assert_eq!(delin, [x, y, z]);
                 }
@@ -178,6 +271,25 @@ mod test {
             }
         }
         assert_eq!(world.ground, vec![0xffffffffffffffff; 64 * 64]);
+    }
+
+    #[test]
+    fn visible_faces_of_full_cube() {
+        let mut world = VoxelStorage::empty();
+        for x in 0..64 {
+            for y in 0..64 {
+                for z in 0..64 {
+                    world.set([x, y, z]);
+                }
+            }
+        }
+        let faces = world.visible_faces();
+        assert_eq!(faces.top.len(), 64 * 64);
+        assert_eq!(faces.bottom.len(), 64 * 64);
+        assert_eq!(faces.left.len(), 64 * 64);
+        assert_eq!(faces.right.len(), 64 * 64);
+        assert_eq!(faces.front.len(), 64 * 64);
+        assert_eq!(faces.front.len(), 64 * 64);
     }
 }
 
