@@ -1,4 +1,6 @@
+mod voxel_mesh;
 mod voxel_storage;
+
 use godot::engine::mesh::PrimitiveType;
 use godot::engine::EditorInterface;
 use godot::engine::Engine;

@@ -182,12 +182,12 @@ impl VoxelStorage {
 }
 
 pub struct Faces {
-    top: Vec<[u8; 3]>,
-    bottom: Vec<[u8; 3]>,
-    left: Vec<[u8; 3]>,
-    right: Vec<[u8; 3]>,
-    front: Vec<[u8; 3]>,
-    back: Vec<[u8; 3]>,
+    pub top: Vec<[u8; 3]>,
+    pub bottom: Vec<[u8; 3]>,
+    pub left: Vec<[u8; 3]>,
+    pub right: Vec<[u8; 3]>,
+    pub front: Vec<[u8; 3]>,
+    pub back: Vec<[u8; 3]>,
 }
 
 impl Faces {
@@ -200,6 +200,14 @@ impl Faces {
             front: Vec::new(),
             back: Vec::new(),
         }
+    }
+    pub fn total(&self) -> usize {
+        self.top.len()
+            + self.bottom.len()
+            + self.left.len()
+            + self.right.len()
+            + self.front.len()
+            + self.back.len()
     }
 }
 
