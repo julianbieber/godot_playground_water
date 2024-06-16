@@ -1,3 +1,45 @@
+use std::{collections::HashMap, ops::Range};
+
+use noise::{Fbm, NoiseFn, OpenSimplex};
+
+pub struct Chunks {
+    pub grid: HashMap<[i8; 2], VoxelStorage>,
+}
+
+impl Chunks {
+    pub fn gen(xs: Range<i8>, zs: Range<i8>) -> Chunks {
+        let mut grid: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
+        let n = Fbm::<OpenSimplex>::new(0);
+        for x in xs {
+            for z in zs.clone() {
+                let mut c = VoxelStorage::empty();
+                for lx in 0..64 {
+                    for lz in 0..64 {
+                        let height = (n.get(Chunks::to_noise([
+                            (x as i32) * 64 + (lx as i32),
+                            (z as i32) * 64 + (lz as i32),
+                        ])) + 1.0)
+                            / 2.0
+                            * 64.0
+                            + 1.0;
+                        let mut y = 0;
+                        while (y as f64) < height {
+                            c.set([lx, y, lz]);
+                            y += 1;
+                        }
+                    }
+                }
+                grid.insert([x, z], c);
+            }
+        }
+        Chunks { grid }
+    }
+
+    fn to_noise(g: [i32; 2]) -> [f64; 2] {
+        [g[0] as f64 * 0.01, g[1] as f64 * 0.01]
+    }
+}
+
 pub struct VoxelStorage {
     ground: Vec<u64>,
 }

@@ -4,10 +4,7 @@ mod voxel_storage;
 use godot::engine::EditorInterface;
 use godot::engine::Engine;
 use godot::engine::GeometryInstance3D;
-use godot::engine::Material;
 use godot::engine::MeshInstance3D;
-use godot::engine::ResourceFormatLoader;
-use godot::engine::ResourceImporter;
 use godot::engine::ResourceLoader;
 use godot::engine::Shader;
 use godot::engine::ShaderMaterial;
@@ -32,6 +29,7 @@ use godot::engine::ArrayMesh;
 use godot::engine::IEditorPlugin;
 use godot::obj::Gd;
 
+use crate::voxel_storage::Chunks;
 use crate::voxel_storage::VoxelStorage;
 
 #[godot_api]
@@ -68,11 +66,18 @@ impl GenMeshNode {
     #[func]
     fn gen(&mut self) {
         godot_print!("call");
-        if let Some(mut parent) = EditorInterface::singleton().get_edited_scene_root() {
-            let (mut mesh, storage) = create_mesh();
-            parent.add_child(mesh.clone());
-            mesh.set_owner(parent);
-            godot_print!("attached node");
+        if let Some(parent) = EditorInterface::singleton().get_edited_scene_root() {
+            let chunks = Chunks::gen(-2..2, -2..2);
+            for (coord, s) in chunks.grid.iter() {
+                let mut mesh = create_mesh(
+                    Vector3::new(coord[0] as f32 * 64.0, 0.0, coord[1] as f32 * 64.0),
+                    s,
+                );
+                let p = parent.clone();
+                parent.clone().add_child(mesh.clone());
+                mesh.set_owner(p);
+                godot_print!("attached node");
+            }
         }
     }
 
@@ -80,9 +85,7 @@ impl GenMeshNode {
     fn clear(&self) {}
 }
 
-fn create_mesh() -> (Gd<Node>, voxel_storage::VoxelStorage) {
-    let mut storage = VoxelStorage::empty();
-    sphere(&mut storage);
+fn create_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
     let mesh: Gd<ArrayMesh> = voxel_mesh::blocky(&storage.visible_faces());
     let mut instance = MeshInstance3D::new_alloc();
     instance.set_mesh(mesh.upcast());
@@ -96,17 +99,7 @@ fn create_mesh() -> (Gd<Node>, voxel_storage::VoxelStorage) {
     .cast();
     sh.set_shader(shader);
     geo.set_material_override(sh.upcast());
-    (instance.upcast(), storage)
-}
-
-fn sphere(storage: &mut VoxelStorage) {
-    for x in 0..64 {
-        for y in 0..64 {
-            for z in 0..64 {
-                if x + y + z < 32 {
-                    storage.set([x, y, z]);
-                }
-            }
-        }
-    }
+    let mut transform: Gd<Node3D> = instance.clone().upcast();
+    transform.set_position(p);
+    instance.upcast()
 }
