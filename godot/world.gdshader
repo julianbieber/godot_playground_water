@@ -6,7 +6,8 @@ void vertex() {
 
 void fragment() {
 	
-	ALBEDO = vec3(0.1, UV.x* 0.01, UV.y* 0.01);
+	ALBEDO = vec3(0.1, UV.x, UV.y);
+	METALLIC = 0.3;
 	
 	
 }

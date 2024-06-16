@@ -1,10 +1,16 @@
 mod voxel_mesh;
 mod voxel_storage;
 
-use godot::engine::texture_button::StretchMode;
 use godot::engine::EditorInterface;
 use godot::engine::Engine;
+use godot::engine::GeometryInstance3D;
+use godot::engine::Material;
 use godot::engine::MeshInstance3D;
+use godot::engine::ResourceFormatLoader;
+use godot::engine::ResourceImporter;
+use godot::engine::ResourceLoader;
+use godot::engine::Shader;
+use godot::engine::ShaderMaterial;
 use godot::prelude::*;
 
 struct MyExtension;
@@ -80,20 +86,16 @@ fn create_mesh() -> (Gd<Node>, voxel_storage::VoxelStorage) {
     let mesh: Gd<ArrayMesh> = voxel_mesh::blocky(&storage.visible_faces());
     let mut instance = MeshInstance3D::new_alloc();
     instance.set_mesh(mesh.upcast());
-
-    // let mut mesh = ArrayMesh::new_gd();
-    // let mut array = VariantArray::new();
-    // array.resize(mesh::ArrayType::MAX.ord() as usize, &Variant::nil());
-    // let (positions, indices) = create_voxels();
-    // array.set(
-    //     mesh::ArrayType::VERTEX.ord() as usize,
-    //     positions.to_variant(),
-    // );
-    // array.set(mesh::ArrayType::INDEX.ord() as usize, indices.to_variant());
-    // mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, array);
-    // let mut mesh_instance = MeshInstance3D::new_alloc();
-    // mesh_instance.set_mesh(mesh.upcast());
-    // mesh_instance.upcast()
+    let mut geo = instance.clone().upcast::<GeometryInstance3D>();
+    let mut sh = ShaderMaterial::new_gd();
+    let shader: Gd<Shader> = ResourceLoader::load(
+        &mut ResourceLoader::singleton(),
+        "res://world.gdshader".into_godot(),
+    )
+    .unwrap()
+    .cast();
+    sh.set_shader(shader);
+    geo.set_material_override(sh.upcast());
     (instance.upcast(), storage)
 }
 
@@ -108,6 +110,3 @@ fn sphere(storage: &mut VoxelStorage) {
         }
     }
 }
-
-// This chunk will cover just a single octant of a sphere SDF (radius 15).
-// Some quads were generated.

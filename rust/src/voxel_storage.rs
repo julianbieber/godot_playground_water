@@ -110,7 +110,7 @@ impl VoxelStorage {
                     )
                 }
                 // back
-                if let Some(back) = VoxelStorage::right([x as u8, z as u8]) {
+                if let Some(back) = VoxelStorage::back([x as u8, z as u8]) {
                     let back_column = self.ground[back[0] as usize + (back[1] as usize) * 64];
                     VoxelStorage::faces_from_next_pillar(
                         column,

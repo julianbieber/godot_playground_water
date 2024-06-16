@@ -1,10 +1,12 @@
 use godot::{
-    builtin::{PackedInt32Array, PackedVector3Array, Variant, VariantArray, Vector3},
+    builtin::{
+        PackedInt32Array, PackedVector2Array, PackedVector3Array, Variant, VariantArray, Vector2,
+        Vector3,
+    },
     engine::{
         mesh::{ArrayType, PrimitiveType},
-        ArrayMesh,
+        ArrayMesh, GeometryInstance3D,
     },
-    log::godot_print,
     meta::ToGodot,
     obj::{EngineEnum, Gd, NewGd},
 };
@@ -15,9 +17,9 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
     let mut m = ArrayMesh::new_gd();
 
     let mut positions = PackedVector3Array::new();
-    // positions.resize(faces.total() * 4);
     let mut indices = PackedInt32Array::new();
-    // indices.resize(faces.total());
+    let mut normals = PackedVector3Array::new();
+    let mut uvs = PackedVector2Array::new();
     let mut i = 0;
     for &[x, y, z] in faces.top.iter() {
         let y = y as f32 + 1.0;
@@ -41,6 +43,15 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 1);
         indices.push(i * 4 + 3);
+
+        for _ in 0..4 {
+            normals.push(Vector3::UP);
+        }
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
+
         i += 1;
     }
     for &[x, y, z] in faces.bottom.iter() {
@@ -65,6 +76,15 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 3);
         indices.push(i * 4 + 1);
+
+        for _ in 0..4 {
+            normals.push(Vector3::DOWN);
+        }
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
+
         i += 1;
     }
     for &[x, y, z] in faces.left.iter() {
@@ -89,6 +109,15 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 1);
         indices.push(i * 4 + 3);
+
+        for _ in 0..4 {
+            normals.push(Vector3::LEFT);
+        }
+
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
         i += 1;
     }
     for &[x, y, z] in faces.right.iter() {
@@ -113,6 +142,15 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 3);
         indices.push(i * 4 + 1);
+
+        for _ in 0..4 {
+            normals.push(Vector3::RIGHT);
+        }
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
+
         i += 1;
     }
     for &[x, y, z] in faces.back.iter() {
@@ -137,6 +175,15 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 1);
         indices.push(i * 4 + 3);
+
+        for _ in 0..4 {
+            normals.push(Vector3::BACK);
+        }
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
+
         i += 1;
     }
     for &[x, y, z] in faces.front.iter() {
@@ -161,15 +208,24 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         indices.push(i * 4 + 2);
         indices.push(i * 4 + 3);
         indices.push(i * 4 + 1);
+
+        for _ in 0..4 {
+            normals.push(Vector3::FORWARD);
+        }
+        uvs.push(Vector2::new(0.0, 0.0));
+        uvs.push(Vector2::new(1.0, 0.0));
+        uvs.push(Vector2::new(0.0, 1.0));
+        uvs.push(Vector2::new(1.0, 1.0));
+
         i += 1;
     }
-    godot_print!("positions: {positions:?}");
 
     let mut variant_array = VariantArray::new();
     variant_array.resize(ArrayType::MAX.ord() as usize, &Variant::nil());
     variant_array.set(ArrayType::VERTEX.ord() as usize, positions.to_variant());
     variant_array.set(ArrayType::INDEX.ord() as usize, indices.to_variant());
+    variant_array.set(ArrayType::NORMAL.ord() as usize, normals.to_variant());
+    variant_array.set(ArrayType::TEX_UV.ord() as usize, uvs.to_variant());
     m.add_surface_from_arrays(PrimitiveType::TRIANGLES, variant_array);
-    m.regen_normal_maps();
     m
 }
