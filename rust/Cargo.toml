@@ -8,7 +8,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-bit-vec = "0.6.3"
-block-mesh = { git = "https://github.com/bonsairobo/block-mesh-rs", branch = "main"}
 derive_more = "0.99.17"
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = ["experimental-threads"]}

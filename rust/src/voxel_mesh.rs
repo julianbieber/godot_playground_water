@@ -1,6 +1,12 @@
 use godot::{
-    engine::ArrayMesh,
-    obj::{Gd, NewGd},
+    builtin::{PackedInt32Array, PackedVector3Array, Variant, VariantArray, Vector3},
+    engine::{
+        mesh::{ArrayType, PrimitiveType},
+        ArrayMesh,
+    },
+    log::godot_print,
+    meta::ToGodot,
+    obj::{EngineEnum, Gd, NewGd},
 };
 
 use crate::voxel_storage::Faces;
@@ -8,9 +14,12 @@ use crate::voxel_storage::Faces;
 pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
     let mut m = ArrayMesh::new_gd();
 
-    let mut positions: Vec<f32> = Vec::with_capacity(faces.total() * 4 * 3);
-    let mut indices: Vec<i32> = Vec::with_capacity(faces.total() * 6);
-    for (i, &[x, y, z]) in faces.top.iter().enumerate() {
+    let mut positions = PackedVector3Array::new();
+    // positions.resize(faces.total() * 4);
+    let mut indices = PackedInt32Array::new();
+    // indices.resize(faces.total());
+    let mut i = 0;
+    for &[x, y, z] in faces.top.iter() {
         let y = y as f32 + 1.0;
         let down_left_x = x as f32;
         let down_left_z = z as f32;
@@ -20,23 +29,147 @@ pub fn blocky(faces: &Faces) -> Gd<ArrayMesh> {
         let up_left_z = z as f32 + 1.0;
         let up_right_x = x as f32 + 1.0;
         let up_right_z = z as f32 + 1.0;
-        positions.extend_from_slice(&[
-            down_left_x,
-            y,
-            down_left_z,
-            down_right_x,
-            y,
-            down_right_z,
-            up_left_x,
-            y,
-            up_left_z,
-            up_right_x,
-            y,
-            up_right_z,
-        ]);
-        let i = i as i32;
-        indices.extend_from_slice(&[i * 6, i * 6 + 1, i * 6 + 2, i * 6 + 2, i * 6 + 1, i * 6 + 3])
-    }
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
 
+        positions.push(Vector3::new(down_left_x, y, down_left_z));
+        positions.push(Vector3::new(down_right_x, y, down_right_z));
+        positions.push(Vector3::new(up_left_x, y, up_left_z));
+        positions.push(Vector3::new(up_right_x, y, up_right_z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 3);
+        i += 1;
+    }
+    for &[x, y, z] in faces.bottom.iter() {
+        let y = y as f32;
+        let down_left_x = x as f32;
+        let down_left_z = z as f32;
+        let down_right_x = x as f32 + 1.0;
+        let down_right_z = z as f32;
+        let up_left_x = x as f32;
+        let up_left_z = z as f32 + 1.0;
+        let up_right_x = x as f32 + 1.0;
+        let up_right_z = z as f32 + 1.0;
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
+
+        positions.push(Vector3::new(down_left_x, y, down_left_z));
+        positions.push(Vector3::new(down_right_x, y, down_right_z));
+        positions.push(Vector3::new(up_left_x, y, up_left_z));
+        positions.push(Vector3::new(up_right_x, y, up_right_z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 3);
+        indices.push(i * 4 + 1);
+        i += 1;
+    }
+    for &[x, y, z] in faces.left.iter() {
+        let x = x as f32;
+        let down_left_y = y as f32;
+        let down_left_z = z as f32;
+        let down_right_y = y as f32 + 1.0;
+        let down_right_z = z as f32;
+        let up_left_y = y as f32;
+        let up_left_z = z as f32 + 1.0;
+        let up_right_y = y as f32 + 1.0;
+        let up_right_z = z as f32 + 1.0;
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
+
+        positions.push(Vector3::new(x, down_left_y, down_left_z));
+        positions.push(Vector3::new(x, down_right_y, down_right_z));
+        positions.push(Vector3::new(x, up_left_y, up_left_z));
+        positions.push(Vector3::new(x, up_right_y, up_right_z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 3);
+        i += 1;
+    }
+    for &[x, y, z] in faces.right.iter() {
+        let x = x as f32 + 1.0;
+        let down_left_y = y as f32;
+        let down_left_z = z as f32;
+        let down_right_y = y as f32 + 1.0;
+        let down_right_z = z as f32;
+        let up_left_y = y as f32;
+        let up_left_z = z as f32 + 1.0;
+        let up_right_y = y as f32 + 1.0;
+        let up_right_z = z as f32 + 1.0;
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
+
+        positions.push(Vector3::new(x, down_left_y, down_left_z));
+        positions.push(Vector3::new(x, down_right_y, down_right_z));
+        positions.push(Vector3::new(x, up_left_y, up_left_z));
+        positions.push(Vector3::new(x, up_right_y, up_right_z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 3);
+        indices.push(i * 4 + 1);
+        i += 1;
+    }
+    for &[x, y, z] in faces.back.iter() {
+        let z = z as f32 + 1.0;
+        let down_left_y = y as f32;
+        let down_left_x = x as f32;
+        let down_right_y = y as f32 + 1.0;
+        let down_right_x = x as f32;
+        let up_left_y = y as f32;
+        let up_left_x = x as f32 + 1.0;
+        let up_right_y = y as f32 + 1.0;
+        let up_right_x = x as f32 + 1.0;
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
+
+        positions.push(Vector3::new(down_left_x, down_left_y, z));
+        positions.push(Vector3::new(down_right_x, down_right_y, z));
+        positions.push(Vector3::new(up_left_x, up_left_y, z));
+        positions.push(Vector3::new(up_right_x, up_right_y, z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 3);
+        i += 1;
+    }
+    for &[x, y, z] in faces.front.iter() {
+        let z = z as f32;
+        let down_left_y = y as f32;
+        let down_left_x = x as f32;
+        let down_right_y = y as f32 + 1.0;
+        let down_right_x = x as f32;
+        let up_left_y = y as f32;
+        let up_left_x = x as f32 + 1.0;
+        let up_right_y = y as f32 + 1.0;
+        let up_right_x = x as f32 + 1.0;
+        Vector3::new(0.0, 0.0, 0.0).to_variant();
+
+        positions.push(Vector3::new(down_left_x, down_left_y, z));
+        positions.push(Vector3::new(down_right_x, down_right_y, z));
+        positions.push(Vector3::new(up_left_x, up_left_y, z));
+        positions.push(Vector3::new(up_right_x, up_right_y, z));
+        indices.push(i * 4);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 1);
+        indices.push(i * 4 + 2);
+        indices.push(i * 4 + 3);
+        indices.push(i * 4 + 1);
+        i += 1;
+    }
+    godot_print!("positions: {positions:?}");
+
+    let mut variant_array = VariantArray::new();
+    variant_array.resize(ArrayType::MAX.ord() as usize, &Variant::nil());
+    variant_array.set(ArrayType::VERTEX.ord() as usize, positions.to_variant());
+    variant_array.set(ArrayType::INDEX.ord() as usize, indices.to_variant());
+    m.add_surface_from_arrays(PrimitiveType::TRIANGLES, variant_array);
+    m.regen_normal_maps();
     m
 }
