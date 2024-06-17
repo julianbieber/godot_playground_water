@@ -3,14 +3,15 @@ use std::{collections::HashMap, ops::Range};
 use noise::{Fbm, NoiseFn, OpenSimplex};
 
 pub struct Chunks {
-    pub grid: HashMap<[i8; 2], VoxelStorage>,
+    pub ground: HashMap<[i8; 2], VoxelStorage>,
+    pub water: HashMap<[i8; 2], VoxelStorage>,
 }
 
 impl Chunks {
     pub fn gen(xs: Range<i8>, zs: Range<i8>) -> Chunks {
-        let mut grid: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
+        let mut ground: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
         let n = Fbm::<OpenSimplex>::new(0);
-        for x in xs {
+        for x in xs.clone() {
             for z in zs.clone() {
                 let mut c = VoxelStorage::empty();
                 for lx in 0..64 {
@@ -29,10 +30,25 @@ impl Chunks {
                         }
                     }
                 }
-                grid.insert([x, z], c);
+                ground.insert([x, z], c);
             }
         }
-        Chunks { grid }
+        let mut water: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
+        for x in xs {
+            for z in zs.clone() {
+                let mut c = VoxelStorage::empty();
+                for lx in 0..64 {
+                    for lz in 0..64 {
+                        for y in 62..63 {
+                            c.set([lx, y, lz]);
+                        }
+                    }
+                }
+                c.subtract(&ground[&[x, z]]);
+                water.insert([x, z], c);
+            }
+        }
+        Chunks { ground, water }
     }
 
     fn to_noise(g: [i32; 2]) -> [f64; 2] {
@@ -67,6 +83,13 @@ impl VoxelStorage {
         let ground = self.ground[grid_positon as usize];
         let ground_pattern = (1 as u64) << height;
         (ground & ground_pattern) != 0
+    }
+
+    pub fn subtract(&mut self, other: &VoxelStorage) {
+        for (a, b) in self.ground.iter_mut().zip(other.ground.iter()) {
+            let both = *a & *b;
+            *a = *a & !both;
+        }
     }
 
     /// returns separate vectors for each side

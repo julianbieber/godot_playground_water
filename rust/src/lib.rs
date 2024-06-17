@@ -68,14 +68,22 @@ impl GenMeshNode {
         godot_print!("call");
         if let Some(parent) = EditorInterface::singleton().get_edited_scene_root() {
             let chunks = Chunks::gen(-2..2, -2..2);
-            for (coord, s) in chunks.grid.iter() {
-                let mut mesh = create_mesh(
+            for (coord, s) in chunks.ground.iter() {
+                let w = &chunks.water[coord];
+                let mut ground = create_ground_mesh(
                     Vector3::new(coord[0] as f32 * 64.0, 0.0, coord[1] as f32 * 64.0),
                     s,
                 );
                 let p = parent.clone();
-                parent.clone().add_child(mesh.clone());
-                mesh.set_owner(p);
+                parent.clone().add_child(ground.clone());
+                ground.set_owner(p);
+                let mut water = create_water_mesh(
+                    Vector3::new(coord[0] as f32 * 64.0, 0.0, coord[1] as f32 * 64.0),
+                    w,
+                );
+                let p = parent.clone();
+                parent.clone().add_child(water.clone());
+                water.set_owner(p);
                 godot_print!("attached node");
             }
         }
@@ -85,7 +93,7 @@ impl GenMeshNode {
     fn clear(&self) {}
 }
 
-fn create_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
+fn create_ground_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
     let mesh: Gd<ArrayMesh> = voxel_mesh::blocky(&storage.visible_faces());
     let mut instance = MeshInstance3D::new_alloc();
     instance.set_mesh(mesh.upcast());
@@ -99,6 +107,25 @@ fn create_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
     .cast();
     sh.set_shader(shader);
     geo.set_material_override(sh.upcast());
+    let mut transform: Gd<Node3D> = instance.clone().upcast();
+    transform.set_position(p);
+    instance.upcast()
+}
+fn create_water_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
+    let mesh: Gd<ArrayMesh> = voxel_mesh::blocky(&storage.visible_faces());
+    let mut instance = MeshInstance3D::new_alloc();
+    instance.set_mesh(mesh.upcast());
+    let mut geo = instance.clone().upcast::<GeometryInstance3D>();
+    let mut sh = ShaderMaterial::new_gd();
+    let shader: Gd<Shader> = ResourceLoader::load(
+        &mut ResourceLoader::singleton(),
+        "res://water.gdshader".into_godot(),
+    )
+    .unwrap()
+    .cast();
+    sh.set_shader(shader);
+    geo.set_material_override(sh.upcast());
+    geo.set_transparency(0.5);
     let mut transform: Gd<Node3D> = instance.clone().upcast();
     transform.set_position(p);
     instance.upcast()
