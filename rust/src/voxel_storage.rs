@@ -2,14 +2,16 @@ use std::{collections::HashMap, ops::Range};
 
 use noise::{Fbm, NoiseFn, OpenSimplex};
 
+pub type ChunkStorage = HashMap<[i8; 2], VoxelStorage>;
+
 pub struct Chunks {
-    pub ground: HashMap<[i8; 2], VoxelStorage>,
-    pub water: HashMap<[i8; 2], VoxelStorage>,
+    pub ground: ChunkStorage,
+    pub water: ChunkStorage,
 }
 
 impl Chunks {
     pub fn gen(xs: Range<i8>, zs: Range<i8>) -> Chunks {
-        let mut ground: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
+        let mut ground: ChunkStorage = HashMap::new();
         let n = Fbm::<OpenSimplex>::new(0);
         for x in xs.clone() {
             for z in zs.clone() {
@@ -33,7 +35,7 @@ impl Chunks {
                 ground.insert([x, z], c);
             }
         }
-        let mut water: HashMap<[i8; 2], VoxelStorage> = HashMap::new();
+        let mut water: ChunkStorage = HashMap::new();
         for x in xs {
             for z in zs.clone() {
                 let mut c = VoxelStorage::empty();
@@ -57,13 +59,13 @@ impl Chunks {
 }
 
 pub struct VoxelStorage {
-    ground: Vec<u64>,
+    pub raw: Vec<u64>,
 }
 
 impl VoxelStorage {
     pub fn empty() -> Self {
         VoxelStorage {
-            ground: vec![0; 64 * 64], // 64 x 64 x 64 voxels each voxel is 1 bit
+            raw: vec![0; 64 * 64], // 64 x 64 x 64 voxels each voxel is 1 bit
         }
     }
 
@@ -71,22 +73,22 @@ impl VoxelStorage {
         let lin = linearize_position(coords);
         let height = extract_height(lin);
         let grid_positon = extract_grid_index(lin);
-        let ground = self.ground[grid_positon as usize];
+        let ground = self.raw[grid_positon as usize];
         let ground_pattern = (1 as u64) << height;
         let ground = ground | ground_pattern;
-        self.ground[grid_positon as usize] = ground;
+        self.raw[grid_positon as usize] = ground;
     }
     pub fn get(&self, coords: [u8; 3]) -> bool {
         let lin = linearize_position(coords);
         let height = extract_height(lin);
         let grid_positon = extract_grid_index(lin);
-        let ground = self.ground[grid_positon as usize];
+        let ground = self.raw[grid_positon as usize];
         let ground_pattern = (1 as u64) << height;
         (ground & ground_pattern) != 0
     }
 
     pub fn subtract(&mut self, other: &VoxelStorage) {
-        for (a, b) in self.ground.iter_mut().zip(other.ground.iter()) {
+        for (a, b) in self.raw.iter_mut().zip(other.raw.iter()) {
             let both = *a & *b;
             *a = *a & !both;
         }
@@ -98,7 +100,7 @@ impl VoxelStorage {
         for z in 0..64 {
             for x in 0..64 {
                 // up/dwon
-                let column = self.ground[x + z * 64];
+                let column = self.raw[x + z * 64];
                 let bottom_most = (column & 1) == 1;
                 if bottom_most {
                     faces.bottom.push([x as u8, 0, z as u8]);
@@ -121,7 +123,7 @@ impl VoxelStorage {
 
                 // left
                 if let Some(left) = VoxelStorage::left([x as u8, z as u8]) {
-                    let left_column = self.ground[left[0] as usize + (left[1] as usize) * 64];
+                    let left_column = self.raw[left[0] as usize + (left[1] as usize) * 64];
                     VoxelStorage::faces_from_next_pillar(
                         column,
                         left_column,
@@ -139,7 +141,7 @@ impl VoxelStorage {
                 }
                 // right
                 if let Some(right) = VoxelStorage::right([x as u8, z as u8]) {
-                    let right_column = self.ground[right[0] as usize + (right[1] as usize) * 64];
+                    let right_column = self.raw[right[0] as usize + (right[1] as usize) * 64];
                     VoxelStorage::faces_from_next_pillar(
                         column,
                         right_column,
@@ -158,7 +160,7 @@ impl VoxelStorage {
 
                 // front
                 if let Some(front) = VoxelStorage::front([x as u8, z as u8]) {
-                    let front_column = self.ground[front[0] as usize + (front[1] as usize) * 64];
+                    let front_column = self.raw[front[0] as usize + (front[1] as usize) * 64];
                     VoxelStorage::faces_from_next_pillar(
                         column,
                         front_column,
@@ -176,7 +178,7 @@ impl VoxelStorage {
                 }
                 // back
                 if let Some(back) = VoxelStorage::back([x as u8, z as u8]) {
-                    let back_column = self.ground[back[0] as usize + (back[1] as usize) * 64];
+                    let back_column = self.raw[back[0] as usize + (back[1] as usize) * 64];
                     VoxelStorage::faces_from_next_pillar(
                         column,
                         back_column,
@@ -343,7 +345,7 @@ mod test {
                 }
             }
         }
-        assert_eq!(world.ground, vec![0xffffffffffffffff; 64 * 64]);
+        assert_eq!(world.raw, vec![0xffffffffffffffff; 64 * 64]);
     }
 
     #[test]

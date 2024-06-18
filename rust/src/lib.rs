@@ -1,5 +1,6 @@
 mod voxel_mesh;
 mod voxel_storage;
+mod water_sim;
 
 use godot::engine::EditorInterface;
 use godot::engine::Engine;
@@ -31,6 +32,7 @@ use godot::obj::Gd;
 
 use crate::voxel_storage::Chunks;
 use crate::voxel_storage::VoxelStorage;
+use crate::water_sim::simulate_water;
 
 #[godot_api]
 impl IEditorPlugin for WorldGen {
@@ -67,7 +69,10 @@ impl GenMeshNode {
     fn gen(&mut self) {
         godot_print!("call");
         if let Some(parent) = EditorInterface::singleton().get_edited_scene_root() {
-            let chunks = Chunks::gen(-2..2, -2..2);
+            let mut chunks = Chunks::gen(-2..2, -2..2);
+            for _ in 0..64 {
+                simulate_water(&mut chunks);
+            }
             for (coord, s) in chunks.ground.iter() {
                 let w = &chunks.water[coord];
                 let mut ground = create_ground_mesh(
