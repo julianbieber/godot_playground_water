@@ -2,6 +2,8 @@ mod voxel_mesh;
 mod voxel_storage;
 mod water_sim;
 
+use std::time::Instant;
+
 use godot::engine::EditorInterface;
 use godot::engine::Engine;
 use godot::engine::GeometryInstance3D;
@@ -67,11 +69,13 @@ struct GenMeshNode {
 impl GenMeshNode {
     #[func]
     fn gen(&mut self) {
-        godot_print!("call");
         if let Some(parent) = EditorInterface::singleton().get_edited_scene_root() {
             let mut chunks = Chunks::gen(-2..2, -2..2);
-            for _ in 0..64 {
-                simulate_water(&mut chunks);
+            for i in 0..128u8 {
+                let now = Instant::now();
+                simulate_water(&mut chunks, i as u8);
+                let elapsed = now.elapsed();
+                godot_print!("water_sim {elapsed:?}")
             }
             for (coord, s) in chunks.ground.iter() {
                 let w = &chunks.water[coord];
@@ -89,7 +93,6 @@ impl GenMeshNode {
                 let p = parent.clone();
                 parent.clone().add_child(water.clone());
                 water.set_owner(p);
-                godot_print!("attached node");
             }
         }
     }

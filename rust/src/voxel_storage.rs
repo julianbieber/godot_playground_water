@@ -5,6 +5,8 @@ use noise::{Fbm, NoiseFn, OpenSimplex};
 pub type ChunkStorage = HashMap<[i8; 2], VoxelStorage>;
 
 pub struct Chunks {
+    pub xs: Range<i8>,
+    pub zs: Range<i8>,
     pub ground: ChunkStorage,
     pub water: ChunkStorage,
 }
@@ -36,7 +38,7 @@ impl Chunks {
             }
         }
         let mut water: ChunkStorage = HashMap::new();
-        for x in xs {
+        for x in xs.clone() {
             for z in zs.clone() {
                 let mut c = VoxelStorage::empty();
                 for lx in 0..64 {
@@ -50,7 +52,12 @@ impl Chunks {
                 water.insert([x, z], c);
             }
         }
-        Chunks { ground, water }
+        Chunks {
+            ground,
+            water,
+            xs,
+            zs,
+        }
     }
 
     fn to_noise(g: [i32; 2]) -> [f64; 2] {
@@ -85,6 +92,18 @@ impl VoxelStorage {
         let ground = self.raw[grid_positon as usize];
         let ground_pattern = (1 as u64) << height;
         (ground & ground_pattern) != 0
+    }
+
+    pub fn get_pillar(&self, coords: [u8; 2]) -> u64 {
+        let lin = linearize_position([coords[0], 0, coords[1]]);
+        let grid_positon = extract_grid_index(lin);
+        self.raw[grid_positon as usize]
+    }
+
+    pub fn set_pillar(&mut self, coords: [u8; 2], pillar: u64) {
+        let lin = linearize_position([coords[0], 0, coords[1]]);
+        let grid_positon = extract_grid_index(lin);
+        self.raw[grid_positon as usize] = pillar;
     }
 
     pub fn subtract(&mut self, other: &VoxelStorage) {
