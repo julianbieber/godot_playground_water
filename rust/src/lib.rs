@@ -32,8 +32,8 @@ use godot::engine::ArrayMesh;
 use godot::engine::IEditorPlugin;
 use godot::obj::Gd;
 
-use crate::voxel_storage::Chunks;
 use crate::voxel_storage::VoxelStorage;
+use crate::voxel_storage::VoxelWorld;
 use crate::water_sim::simulate_water;
 
 #[godot_api]
@@ -70,7 +70,7 @@ impl GenMeshNode {
     #[func]
     fn gen(&mut self) {
         if let Some(parent) = EditorInterface::singleton().get_edited_scene_root() {
-            let mut chunks = Chunks::gen(-2..2, -2..2);
+            let mut chunks = VoxelWorld::gen(-2..2, -2..2);
             for i in 0..128u8 {
                 let now = Instant::now();
                 simulate_water(&mut chunks, i as u8);
@@ -137,4 +137,21 @@ fn create_water_mesh(p: Vector3, storage: &VoxelStorage) -> Gd<Node> {
     let mut transform: Gd<Node3D> = instance.clone().upcast();
     transform.set_position(p);
     instance.upcast()
+}
+
+#[derive(GodotClass)]
+#[class(base=Node3D)]
+struct World {
+    base: Base<Node3D>,
+    voxels: VoxelWorld,
+}
+
+#[godot_api]
+impl INode3D for World {
+    fn init(base: Base<Node3D>) -> Self {
+        World {
+            base,
+            voxels: todo!(),
+        }
+    }
 }

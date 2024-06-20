@@ -1,8 +1,6 @@
-use godot::engine::Cubemap;
+use crate::voxel_storage::{ChunkStorage, VoxelStorage, VoxelWorld};
 
-use crate::voxel_storage::{ChunkStorage, Chunks, VoxelStorage};
-
-pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
+pub fn simulate_water(chunks: &mut VoxelWorld, step_counter: u8) {
     let mut new_water = ChunkStorage::new();
     for (i, ground) in chunks.ground.iter() {
         let water = &chunks.water[i];
@@ -72,7 +70,7 @@ pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
                 }
                 {
                     let current_water = new_water.get_mut(i).unwrap();
-                    for (i, v) in left_results.into_iter().enumerate() {
+                    for (i, v) in current_results.into_iter().enumerate() {
                         current_water.set_pillar([0, i as u8], v);
                     }
                 }
@@ -122,7 +120,7 @@ pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
                 }
                 {
                     let current_water = new_water.get_mut(i).unwrap();
-                    for (i, v) in left_results.into_iter().enumerate() {
+                    for (i, v) in current_results.into_iter().enumerate() {
                         current_water.set_pillar([63, i as u8], v);
                     }
                 }
@@ -171,7 +169,7 @@ pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
                 }
                 {
                     let current_water = new_water.get_mut(i).unwrap();
-                    for (i, v) in left_results.into_iter().enumerate() {
+                    for (i, v) in current_results.into_iter().enumerate() {
                         current_water.set_pillar([i as u8, 0], v);
                     }
                 }
@@ -220,7 +218,7 @@ pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
                 }
                 {
                     let current_water = new_water.get_mut(i).unwrap();
-                    for (i, v) in left_results.into_iter().enumerate() {
+                    for (i, v) in current_results.into_iter().enumerate() {
                         current_water.set_pillar([i as u8, 63], v);
                     }
                 }
@@ -228,4 +226,24 @@ pub fn simulate_water(chunks: &mut Chunks, step_counter: u8) {
         }
     }
     chunks.water = new_water;
+}
+
+#[cfg(test)]
+mod test {
+    use crate::voxel_storage::VoxelWorld;
+
+    use super::simulate_water;
+
+    #[test]
+    fn water_amount_stays_constant() {
+        let mut world = VoxelWorld::gen(-2..2, -2..2);
+        let total_water: u64 = world.water.values().map(|c| c.count()).sum();
+
+        for i in 0..64 {
+            simulate_water(&mut world, i);
+            let water_after: u64 = world.water.values().map(|c| c.count()).sum();
+            dbg!(i);
+            assert_eq!(total_water, water_after);
+        }
+    }
 }

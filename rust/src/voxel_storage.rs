@@ -4,15 +4,15 @@ use noise::{Fbm, NoiseFn, OpenSimplex};
 
 pub type ChunkStorage = HashMap<[i8; 2], VoxelStorage>;
 
-pub struct Chunks {
+pub struct VoxelWorld {
     pub xs: Range<i8>,
     pub zs: Range<i8>,
     pub ground: ChunkStorage,
     pub water: ChunkStorage,
 }
 
-impl Chunks {
-    pub fn gen(xs: Range<i8>, zs: Range<i8>) -> Chunks {
+impl VoxelWorld {
+    pub fn gen(xs: Range<i8>, zs: Range<i8>) -> VoxelWorld {
         let mut ground: ChunkStorage = HashMap::new();
         let n = Fbm::<OpenSimplex>::new(0);
         for x in xs.clone() {
@@ -20,7 +20,7 @@ impl Chunks {
                 let mut c = VoxelStorage::empty();
                 for lx in 0..64 {
                     for lz in 0..64 {
-                        let height = (n.get(Chunks::to_noise([
+                        let height = (n.get(VoxelWorld::to_noise([
                             (x as i32) * 64 + (lx as i32),
                             (z as i32) * 64 + (lz as i32),
                         ])) + 1.0)
@@ -52,7 +52,7 @@ impl Chunks {
                 water.insert([x, z], c);
             }
         }
-        Chunks {
+        VoxelWorld {
             ground,
             water,
             xs,
@@ -264,6 +264,10 @@ impl VoxelStorage {
         } else {
             Some([p[0], p[1] + 1])
         }
+    }
+
+    pub fn count(&self) -> u64 {
+        self.raw.iter().map(|v| v.count_ones() as u64).sum()
     }
 }
 
