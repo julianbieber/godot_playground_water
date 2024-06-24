@@ -5,7 +5,7 @@ use godot::{
     },
     engine::{
         mesh::{ArrayType, PrimitiveType},
-        ArrayMesh, GeometryInstance3D,
+        ArrayMesh,
     },
     meta::ToGodot,
     obj::{EngineEnum, Gd, NewGd},
